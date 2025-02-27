@@ -15,10 +15,11 @@ if __name__ == "__main__":
         from sqlalchemy import create_engine, Column, Integer, Float, String, Sequence, Date, extract
         from sqlalchemy.ext.declarative import declarative_base
         from sqlalchemy.orm import sessionmaker
+        import tkinter as tk
+        from tkinter import messagebox
+        import matplotlib.pyplot as plt
         from datetime import datetime
         from sqlalchemy.exc import SQLAlchemyError
-        import matplotlib.pyplot as plt
-
     except ModuleNotFoundError as e:
         print(f"Error: {e}. Please ensure all modules are installed.")
         sys.exit(1)
@@ -141,6 +142,42 @@ if __name__ == "__main__":
             messagebox.showerror("Database Error", str(e))
             return None, None, None, None, None, None, [], None, None
 
-        
+    def plot_expenses(expenses, view_type):
+        categories = {}
+        for expense in expenses:
+            if expense.category in categories:
+                categories[expense.category] += expense.amount
+            else:
+                categories[expense.category] = expense.amount
 
-   
+        plt.figure(figsize=(10, 5))
+        if view_type == 'monthly':
+            bars = plt.bar(categories.keys(), categories.values())
+            plt.title('Monthly Expenses by Category')
+        else:
+            yearly_categories = {category: amount for category, amount in categories.items()}
+            bars = plt.bar(yearly_categories.keys(), yearly_categories.values())
+            plt.title('Yearly Expenses by Category')
+            plt.xlabel('Category')
+        plt.ylabel('Amount')
+        # Add annotations to the bars
+        for bar in bars:
+            yval = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width()/2, yval, f'${yval:.2f}', ha='center', va='bottom')
+        plt.show()
+
+    def add_expense():
+        try:
+            amount = float(amount_entry.get())
+            category = category_var.get()
+            if category == "Other":
+                category = other_entry.get()
+            month = months.index(month_var.get()) + 1
+            year = int(year_var.get())
+            save_expense(amount, category, month, year)
+            messagebox.showinfo("Expense Added", f"Added expense of ${amount:.2f} to category '{category}' for {month_var.get()} {year}.")
+            amount_entry.delete(0, tk.END)
+            other_entry.delete(0, tk.END)
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter a valid number for the amount.")
+
