@@ -1,0 +1,3 @@
+SQLAlchemy==1.4.41
+tk
+matplotlib==3.10.0
