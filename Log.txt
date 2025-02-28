@@ -4,25 +4,25 @@ Begin working on the beginning of my expense tracker by adding in the first set 
 I will begin working on the database schema using SQLAlchemy and creating the SQLite database. 
 I created the Expense and Income classes and the tables for the database as well.
 
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Sunday 1 pm - 4 pm (3hrs) 
 
 Implemented the retrieval of data and allowed for the data input into the blank text boxes to be saved to the database.
 
 
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Monday 6pm - 8pm (2hrs)
 Tuesday 7pm - 8pm (1hrs)
 
 Added in the tax calculations specifically to calculate the federal, state, and local taxes to ensure the correct amount taxed is put into account when calculating the rest.
 
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Wednesday 8am - 10am (1hr)
+Thursday 1pm - 2pm + 5pm to 7pm (3hrs)
 
+Working on the graphs that will plot the expenses and add new expenses to that plot using Matplotlib. Ran into a few issues with the plotting of things but managed to fix it.
 
-Working on the graphs that will plot the expenses and add new expenses to that plot using Matplotlib.
-
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

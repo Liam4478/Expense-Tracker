@@ -181,3 +181,24 @@ if __name__ == "__main__":
         except ValueError:
             messagebox.showerror("Input Error", "Please enter a valid number for the amount.")
 
+    def set_income():
+        try:
+            income = float(income_entry.get())
+            frequency = frequency_var.get()
+            save_income(income, frequency)
+            messagebox.showinfo("Income Set", f"{frequency.capitalize()} income set to ${income:.2f}.")
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter a valid number for income.")
+
+    def update_month_dropdown(*args):
+        selected_year = int(year_var.get())
+        current_year = datetime.now().year
+        if selected_year == current_year:
+            valid_months = months[:datetime.now().month]
+        else:
+            valid_months = months
+        month_var.set(valid_months[0])
+        month_dropdown['menu'].delete(0, 'end')
+        for month in valid_months:
+            month_dropdown['menu'].add_command(label=month, command=tk._setit(month_var, month))
+
