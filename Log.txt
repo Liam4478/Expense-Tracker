@@ -6,7 +6,7 @@ I created the Expense and Income classes and the tables for the database as well
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Sunday 1 pm - 4 pm (3hrs) 
+Sunday 1pm - 4pm (3hrs) 
 
 Implemented the retrieval of data and allowed for the data input into the blank text boxes to be saved to the database.
 
@@ -24,5 +24,22 @@ Wednesday 8am - 10am (1hr)
 Thursday 1pm - 2pm + 5pm to 7pm (3hrs)
 
 Working on the graphs that will plot the expenses and add new expenses to that plot using Matplotlib. Ran into a few issues with the plotting of things but managed to fix it.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Friday 2pm - 4pm + 6pm - 7pm (3hrs)
+
+Worked on the implementation of the forms with calculating and displaying savings in it's own form. 
+The indentation was difficult but I managed to figure out the right amount of indentation after I had m,essed up the first time. 
+(Working towards the end goal for this weekend.)
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Saturday 1pm - 4pm (3hrs)
+
+Worked on a windows that allows the user to edit the money given in case you acidentally put in the wrong number. 
+I also added windows that will load the information given, and also an option to delete expenses.
+There was a little trouble with the indentation of somecode but fixed it.
+(I plan to finish this tomorrow.)
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

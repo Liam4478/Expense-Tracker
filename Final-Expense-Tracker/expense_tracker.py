@@ -202,3 +202,79 @@ if __name__ == "__main__":
         for month in valid_months:
             month_dropdown['menu'].add_command(label=month, command=tk._setit(month_var, month))
 
+    def calculate_and_display():
+        try:
+            selected_month = months.index(month_var.get()) + 1
+            selected_year = int(year_var.get())
+            view_type = view_type_var.get()
+            income, monthly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income = calculate_savings(selected_month, selected_year, view_type)
+            if monthly_savings is not None:
+                if view_type == 'monthly':
+                    messagebox.showinfo("Savings", f"Monthly Income: ${income:.2f}\n"
+                                                   f"Monthly Savings: ${monthly_savings:.2f}\n"
+                                                   f"Emergency Savings: ${emergency_savings:.2f}\n"
+                                                   f"Retirement Savings: ${retirement_savings:.2f}\n"
+                                                   f"Stock Investment: ${stock_investment:.2f}\n"
+                                                   f"Living Expenses: ${living_expenses:.2f}\n"
+                                                   f"Total Expenses for {month_var.get()} {selected_year}: ${total_expense_amount:.2f}")
+                else:
+                    messagebox.showinfo("Savings", f"Yearly Income: ${after_tax_income:.2f}\n"
+                                                   f"Yearly Savings: ${monthly_savings * 12:.2f}\n"
+                                                   f"Emergency Savings: ${emergency_savings * 12:.2f}\n"
+                                                   f"Retirement Savings: ${retirement_savings * 12:.2f}\n"
+                                                   f"Stock Investment: ${stock_investment * 12:.2f}\n"
+                                                   f"Living Expenses: ${living_expenses * 12:.2f}\n"
+                                                   f"Total Expenses for the Year: ${total_expense_amount:.2f}")
+                plot_expenses(total_expenses, view_type)
+        except TypeError:
+            messagebox.showerror("Income Error", "Please set your monthly income first.")
+
+    def open_edit_window():
+        engine = create_engine('sqlite:///finances.db')
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        def load_expenses():
+            selected_month = months.index(month_var.get()) + 1
+            selected_year = int(year_var.get())
+            expenses = session.query(Expense).filter(extract('month', Expense.date) == selected_month, extract('year', Expense.date) == selected_year).all()
+            expense_listbox.delete(0, tk.END)
+            for expense in expenses:
+                expense_listbox.insert(tk.END, f"{expense.id}: {expense.category} - ${expense.amount:.2f} on {expense.date.strftime('%Y-%m-%d')}")
+
+        def edit_expense():
+            try:
+                selected_expense = expense_listbox.get(expense_listbox.curselection())
+                expense_id = int(selected_expense.split(":")[0])
+                new_amount = float(new_amount_entry.get())
+                expense = session.query(Expense).filter(Expense.id == expense_id).first()
+                expense.amount = new_amount
+                session.commit()
+                messagebox.showinfo("Expense Edited", f"Expense ID {expense_id} updated to ${new_amount:.2f}.")
+                load_expenses()
+            except (ValueError, IndexError):
+                messagebox.showerror("Selection Error", "Please select an expense and enter a valid amount.")
+
+        def delete_expense():
+            try:
+                selected_expense = expense_listbox.get(expense_listbox.curselection())
+                expense_id = int(selected_expense.split(":")[0])
+                expense = session.query(Expense).filter(Expense.id == expense_id).first()
+                session.delete(expense)
+                session.commit()
+                messagebox.showinfo("Expense Deleted", f"Expense ID {expense_id} deleted.")
+                load_expenses()
+            except IndexError:
+                messagebox.showerror("Selection Error", "Please select an expense to delete.")
+
+        edit_window = tk.Toplevel(root)
+        edit_window.title("Edit Expenses")
+        tk.Label(edit_window, text="Expenses:").grid(row=0, column=0, columnspan=2)
+        expense_listbox = tk.Listbox(edit_window, width=50)
+        expense_listbox.grid(row=1, column=0, columnspan=2)
+        tk.Label(edit_window, text="New Amount:").grid(row=2, column=0)
+        new_amount_entry = tk.Entry(edit_window)
+        new_amount_entry.grid(row=2, column=1)
+        tk.Button(edit_window, text="Edit Expense", command=edit_expense).grid(row=3, column=0)
+        tk.Button(edit_window, text="Delete Expense", command=delete_expense).grid(row=3, column=1)
+        load_expenses()
