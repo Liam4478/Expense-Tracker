@@ -43,3 +43,13 @@ There was a little trouble with the indentation of somecode but fixed it.
 (I plan to finish this tomorrow.)
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Sunday 12pm - 10pm (10hrs)
+
+Worked on finishing my project up. I add to change quite a few things to make certain aspects of what I wanted to work properly. 
+There was a lot of mistakes that I had to change and adjust to make this form work and maintain the information you have enetered.
+Added in a feature with JSON that will log what you enter into the drop down boxes.
+Had an issue with January and Rent not being shown when you click onto another month or expense category.(It was annoying.)
+Also had issues with permissions with the files when they were hidden.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
