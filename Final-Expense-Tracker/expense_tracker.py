@@ -477,7 +477,7 @@ amount_entry = ttk.Entry(expense_frame)
 amount_entry.grid(row=0, column=1, padx=10, pady=5)
 ttk.Label(expense_frame, text="Expense Category:").grid(row=1, column=0, padx=10, pady=5)
 category_var = tk.StringVar(value='Rent')
-common_expenses = ["Rent", "Utilities", "Groceries", "Transportation", "Insurance", "Healthcare", "Entertainment", "Dining Out", "Education", "Savings", "Other"]
+common_expenses = ["Rent", "Utilities", "Groceries", "Transportation", "Insurance", "Healthcare", "Entertainment", "Dining Out", "Education", "Other"]
 # Ensure "Rent" is always included in the dropdown options
 if "Rent" not in common_expenses:
     common_expenses.insert(0, "Rent")
