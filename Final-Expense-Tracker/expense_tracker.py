@@ -29,13 +29,11 @@ if __name__ == "__main__":
             amount = Column(Float)
             category = Column(String(50))
             date = Column(Date)
-
         class Income(Base):
             __tablename__ = 'income'
             id = Column(Integer, Sequence('income_id_seq'), primary_key=True)
             amount = Column(Float)
             frequency = Column(String(10)) # 'monthly' or 'yearly'
-
         engine = create_engine('sqlite:///finances.db')
         Base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
@@ -61,7 +59,7 @@ def save_income(amount, frequency):
             income.frequency = frequency
         else:
             income = Income(amount=amount, frequency=frequency)
-        session.add(income)
+            session.add(income)
         session.commit()
     except SQLAlchemyError as e:
         messagebox.showerror("Database Error", str(e))
@@ -113,27 +111,69 @@ def calculate_savings(selected_month, selected_year, view_type):
             total_expense_amount = sum(expense.amount for expense in total_expenses)
             after_tax_income = income - calculate_taxes(income)
             monthly_savings = after_tax_income - total_expense_amount
+            
+            # Prioritize savings
+            living_expenses = min(monthly_savings, total_expense_amount)
+            monthly_savings -= living_expenses
+            
+            emergency_fund_target = total_expense_amount * 6 / 12
+            emergency_savings = min(monthly_savings, emergency_fund_target)
+            monthly_savings -= emergency_savings
+            
+            retirement_savings = min(monthly_savings, 7500 / 12)
+            monthly_savings -= retirement_savings
+            
+            stock_investment = min(monthly_savings, monthly_savings * 0.10)
+            monthly_savings -= stock_investment
+            
+            # Ensure no negative values
+            living_expenses = max(living_expenses, 0)
+            emergency_savings = max(emergency_savings, 0)
+            retirement_savings = max(retirement_savings, 0)
+            stock_investment = max(stock_investment, 0)
+            
+            # Warn if close to going over budget
+            if total_expense_amount >= after_tax_income - 1000 and monthly_savings > 0:
+                messagebox.showwarning("Budget Warning", "You are $1000 away from going over your budget for the month.")
+            
+    
+            
+            return income, monthly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income, None
+        
         else:
             total_expenses = session.query(Expense).filter(extract('year', Expense.date) == selected_year).all()
             total_expense_amount = sum(expense.amount for expense in total_expenses)
             yearly_income = income * 12
             after_tax_income = yearly_income - calculate_taxes(yearly_income)
-            monthly_savings = after_tax_income / 12 - total_expense_amount / 12
-        # Emergency fund calculation (6 months of expenses)
-        emergency_fund_target = total_expense_amount * 6 / 12
-        emergency_savings = min(monthly_savings * 0.20, emergency_fund_target)
-        # Ensure emergency savings are prioritized
-        remaining_savings = monthly_savings - emergency_savings
-        # IRA/401k contributions (up to $7,500/year for IRA, $22,500/year for 401k in 2023)
-        retirement_savings = min(remaining_savings * 0.15, 7500 / 12)
-        remaining_savings -= retirement_savings
-        # Remaining savings for living and optional stock investment
-        stock_investment = remaining_savings * 0.10
-        living_expenses = remaining_savings - stock_investment
-        return income, monthly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income
+            yearly_savings = after_tax_income - total_expense_amount
+            
+            # Prioritize savings for the year
+            living_expenses = min(yearly_savings, total_expense_amount)
+            yearly_savings -= living_expenses
+            
+            emergency_fund_target = total_expense_amount * 6 / 12
+            emergency_savings = min(yearly_savings, emergency_fund_target)
+            yearly_savings -= emergency_savings
+            
+            retirement_savings = min(yearly_savings, 7500)
+            yearly_savings -= retirement_savings
+            
+            stock_investment = min(yearly_savings, yearly_savings * 0.10)
+            yearly_savings -= stock_investment
+            
+            # Ensure no negative values
+            living_expenses = max(living_expenses, 0)
+            emergency_savings = max(emergency_savings, 0)
+            retirement_savings = max(retirement_savings, 0)
+            stock_investment = max(stock_investment, 0)
+            
+            # Performance line
+            performance_line = "You did well for the year!" if yearly_savings > 0 else "You should try better next year."
+            
+            return income, yearly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income, performance_line
     except SQLAlchemyError as e:
         messagebox.showerror("Database Error", str(e))
-        return None, None, None, None, None, None, [], None, None
+        return None, None, None, None, None, None, [], None, None, None
 
 def plot_expenses(expenses, view_type):
     categories = {}
@@ -205,27 +245,59 @@ def calculate_and_display():
         selected_month = months.index(month_var.get()) + 1
         selected_year = int(year_var.get())
         view_type = view_type_var.get()
-        income, monthly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income = calculate_savings(selected_month, selected_year, view_type)
-        if monthly_savings is not None:
+        income, savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income, performance_line = calculate_savings(selected_month, selected_year, view_type)
+        
+        if savings is not None:
             if view_type == 'monthly':
-                messagebox.showinfo("Savings", f"Monthly Income: ${income:.2f}\n"
-                                               f"Monthly Savings: ${monthly_savings:.2f}\n"
-                                               f"Emergency Savings: ${emergency_savings:.2f}\n"
-                                               f"Retirement Savings: ${retirement_savings:.2f}\n"
-                                               f"Stock Investment: ${stock_investment:.2f}\n"
-                                               f"Living Expenses: ${living_expenses:.2f}\n"
-                                               f"Total Expenses for {month_var.get()} {selected_year}: ${total_expense_amount:.2f}")
+                if savings <= 0:
+                    amount_under = total_expense_amount - after_tax_income
+                    messagebox.showwarning("Savings Warning", f"Your savings have hit 0 or below. You lost ${abs(amount_under):.2f}. Consider saving instead of spending if necessary.")
+                else:
+                    messagebox.showinfo("Savings", f"Monthly Income: ${income:.2f}\n"
+                                                  f"Monthly Savings: ${savings:.2f}\n"
+                                                  f"Emergency Savings: ${emergency_savings:.2f}\n"
+                                                  f"Retirement Savings: ${retirement_savings:.2f}\n"
+                                                  f"Stock Investment: ${stock_investment:.2f}\n"
+                                                  f"Living Expenses: ${living_expenses:.2f}\n"
+                                                  f"Total Expenses for {month_var.get()} {selected_year}: ${total_expense_amount:.2f}")
             else:
-                messagebox.showinfo("Savings", f"Yearly Income: ${after_tax_income:.2f}\n"
-                                               f"Yearly Savings: ${monthly_savings * 12:.2f}\n"
-                                               f"Emergency Savings: ${emergency_savings * 12:.2f}\n"
-                                               f"Retirement Savings: ${retirement_savings * 12:.2f}\n"
-                                               f"Stock Investment: ${stock_investment * 12:.2f}\n"
-                                               f"Living Expenses: ${living_expenses * 12:.2f}\n"
-                                               f"Total Expenses for the Year: ${total_expense_amount:.2f}")
+                if savings <= 0:
+                    amount_under = total_expense_amount - after_tax_income
+                    messagebox.showwarning("Savings Warning", f"Your savings have hit 0 or below. You lost ${abs(amount_under):.2f}. Consider saving instead of spending if necessary.")
+                else:
+                    messagebox.showinfo("Yearly Summary", f"Yearly Income: ${after_tax_income:.2f}\n"
+                                                          f"Yearly Savings: ${savings:.2f}\n"
+                                                          f"Emergency Savings: ${emergency_savings:.2f}\n"
+                                                          f"Retirement Savings: ${retirement_savings:.2f}\n"
+                                                          f"Stock Investment: ${stock_investment:.2f}\n"
+                                                          f"Living Expenses: ${living_expenses:.2f}\n"
+                                                          f"Total Expenses for the Year: ${total_expense_amount:.2f}\n"
+                                                          f"{performance_line}")
             plot_expenses(total_expenses, view_type)
     except TypeError:
-        messagebox.showerror("Income Error", "Please set your monthly income first.")
+        messagebox.showerror("Income Error", "Please set your monthly or yearly income first.")
+
+def update_edit_month_dropdown(*args):
+    selected_year = int(year_var.get())
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+    previous_month = month_var.get()
+    
+    # Ensure January is always included
+    if selected_year == current_year:
+        valid_months = months[:current_month]
+    else:
+        valid_months = months
+    
+    if previous_month in valid_months:
+        month_var.set(previous_month)
+    else:
+        month_var.set(valid_months[0])
+    
+    menu = month_dropdown["menu"]
+    menu.delete(0, "end")
+    for month in valid_months:
+        menu.add_command(label=month, command=tk._setit(month_var, month))
 
 def open_edit_window():
     engine = create_engine('sqlite:///finances.db')
@@ -282,9 +354,6 @@ def open_edit_window():
         except FileNotFoundError:
             edit_month_var.set(datetime.now().strftime('%B'))
             edit_year_var.set(str(datetime.now().year))
-        
-        # Ensure January is always included in the dropdown
-        update_edit_month_dropdown()
     
     def update_edit_month_dropdown(*args):
         selected_year = int(edit_year_var.get())
@@ -310,8 +379,8 @@ def open_edit_window():
     
     edit_window = tk.Toplevel(root)
     edit_window.title("Edit Expenses")
-    edit_window.transient(root)  # Make the edit window a child of the main window
-    edit_window.grab_set()  # Make the edit window modal
+    edit_window.transient(root) # Make the edit window a child of the main window
+    edit_window.grab_set() # Make the edit window modal
     
     ttk.Label(edit_window, text="Select Month:").grid(row=0, column=0, padx=10, pady=5)
     edit_month_var = tk.StringVar(value=datetime.now().strftime('%B'))
@@ -339,6 +408,7 @@ def open_edit_window():
     ttk.Button(edit_window, text="Delete Expense", command=delete_expense).grid(row=6, column=1)
     
     load_edit_settings()
+    update_edit_month_dropdown()
     edit_window.protocol("WM_DELETE_WINDOW", lambda: [save_edit_settings(), edit_window.destroy()])
 
 root = tk.Tk()
@@ -358,13 +428,48 @@ date_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E))
 button_frame = ttk.Frame(root, padding="10 10 10 10")
 button_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
+# Function to set the initial income amount as greyed-out text
+def set_income_placeholder():
+    income = get_income()
+    if income is not None:
+        if frequency_var.get() == 'yearly':
+            income *= 12  # Convert monthly income to yearly
+        income_entry.insert(0, f"${income:.2f}")
+        income_entry.config(foreground='grey', state='readonly')
+
+# Function to enable editing the income amount
+def enable_income_edit():
+    income_entry.config(state='normal', foreground='black')
+    income_entry.delete(0, tk.END)
+
+# Function to update the income placeholder based on the selected frequency
+def update_income_placeholder(*args):
+    income_entry.config(state='normal')
+    income_entry.delete(0, tk.END)
+    set_income_placeholder()
+
 # Income section
 ttk.Label(income_frame, text="Income Amount:").grid(row=0, column=0, padx=10, pady=5)
 income_entry = ttk.Entry(income_frame)
 income_entry.grid(row=0, column=1, padx=10, pady=5)
+
 frequency_var = tk.StringVar(value='monthly')
 ttk.Radiobutton(income_frame, text="Monthly", variable=frequency_var, value='monthly').grid(row=1, column=0, padx=10, pady=5)
 ttk.Radiobutton(income_frame, text="Yearly", variable=frequency_var, value='yearly').grid(row=1, column=1, padx=10, pady=5)
+
+# Add trace to update the income placeholder when the frequency changes
+frequency_var.trace('w', update_income_placeholder)
+
+#Sets the number as greyed-out text.
+set_income_placeholder()
+
+# Button to set the income amount
+set_income_button = ttk.Button(income_frame, text="Set Income", command=set_income)
+set_income_button.grid(row=0, column=2, padx=5)
+
+# Button to enable editing the income amount
+edit_income_button = ttk.Button(income_frame, text="Edit", command=enable_income_edit)
+edit_income_button.grid(row=0, column=3, padx=5)
 
 # Expense section
 ttk.Label(expense_frame, text="Expense Amount:").grid(row=0, column=0, padx=10, pady=5)
@@ -373,11 +478,9 @@ amount_entry.grid(row=0, column=1, padx=10, pady=5)
 ttk.Label(expense_frame, text="Expense Category:").grid(row=1, column=0, padx=10, pady=5)
 category_var = tk.StringVar(value='Rent')
 common_expenses = ["Rent", "Utilities", "Groceries", "Transportation", "Insurance", "Healthcare", "Entertainment", "Dining Out", "Education", "Savings", "Other"]
-
 # Ensure "Rent" is always included in the dropdown options
 if "Rent" not in common_expenses:
     common_expenses.insert(0, "Rent")
-
 category_dropdown = ttk.OptionMenu(expense_frame, category_var, *common_expenses)
 category_dropdown.grid(row=1, column=1, padx=10, pady=5)
 other_entry = ttk.Entry(expense_frame)
@@ -410,25 +513,6 @@ view_type_var = tk.StringVar(value='monthly')
 ttk.Radiobutton(date_frame, text="Monthly", variable=view_type_var, value='monthly').grid(row=2, column=1, padx=10, pady=5)
 ttk.Radiobutton(date_frame, text="Yearly", variable=view_type_var, value='yearly').grid(row=2, column=2, padx=10, pady=5)
 
-def update_edit_month_dropdown():
-    selected_year = int(year_var.get())
-    current_year = datetime.now().year
-    current_month = datetime.now().month
-    previous_month = month_var.get()
-    
-    # Ensure January is always included
-    valid_months = months[:current_month] if selected_year == current_year else months
-    
-    if previous_month in valid_months:
-        month_var.set(previous_month)
-    else:
-        month_var.set(valid_months[0])
-    
-    menu = month_dropdown["menu"]
-    menu.delete(0, "end")
-    for month in valid_months:
-        menu.add_command(label=month, command=tk._setit(month_var, month))
-
 # Placeholder text for other_entry
 def set_placeholder(event):
     if other_entry.get() == '':
@@ -445,22 +529,27 @@ other_entry.config(foreground='grey')
 other_entry.bind('<FocusIn>', clear_placeholder)
 other_entry.bind('<FocusOut>', set_placeholder)
 
-# Buttons
-ttk.Button(button_frame, text="Set Income", command=set_income).grid(row=0, column=0, padx=5)
-ttk.Button(button_frame, text="Add Expense", command=add_expense).grid(row=0, column=1, padx=5)
-ttk.Button(button_frame, text="Calculate Savings", command=calculate_and_display).grid(row=0, column=2, padx=5)
-ttk.Button(button_frame, text="Edit Expenses", command=open_edit_window).grid(row=0, column=3, padx=5)
+#Bottom Buttons
+ttk.Button(button_frame, text="Add Expense", command=add_expense).grid(row=0, column=1, padx=25, sticky="ew")
+ttk.Button(button_frame, text="Calculate Savings", command=calculate_and_display).grid(row=0, column=2, padx=25, sticky="ew")
+ttk.Button(button_frame, text="Edit Expenses", command=open_edit_window).grid(row=0, column=3, padx=25, sticky="ew")
+
+# Configure the row and column weights to allow expansion
+button_frame.columnconfigure(0, weight=1)
+button_frame.columnconfigure(1, weight=1)
+button_frame.columnconfigure(2, weight=1)
+button_frame.rowconfigure(0, weight=1)
 
 def load_settings():
     try:
         with open("settings.json", "r") as settings_file:
             settings = json.load(settings_file)
-            month_var.set(settings.get("edit_month", datetime.now().strftime('%B')))
-            year_var.set(settings.get("edit_year", str(datetime.now().year)))
-            view_type_var.set(settings.get("view_type", "monthly"))
+        month_var.set(settings.get("edit_month", datetime.now().strftime('%B')))
+        year_var.set(settings.get("edit_year", str(datetime.now().year)))
+        view_type_var.set(settings.get("view_type", "monthly"))
     except FileNotFoundError:
-            month_var.set(datetime.now().strftime('%B'))
-            year_var.set(str(datetime.now().year))
+        month_var.set(datetime.now().strftime('%B'))
+        year_var.set(str(datetime.now().year))
 
 load_settings()
 
