@@ -59,7 +59,7 @@ def save_income(amount, frequency):
             income.frequency = frequency
         else:
             income = Income(amount=amount, frequency=frequency)
-            session.add(income)
+        session.add(income)
         session.commit()
     except SQLAlchemyError as e:
         messagebox.showerror("Database Error", str(e))
@@ -112,18 +112,18 @@ def calculate_savings(selected_month, selected_year, view_type):
             after_tax_income = income - calculate_taxes(income)
             monthly_savings = after_tax_income - total_expense_amount
             
-            # Prioritize savings
-            living_expenses = min(monthly_savings, total_expense_amount)
+            # Prioritize expenses over savings
+            living_expenses = total_expense_amount
             monthly_savings -= living_expenses
             
             emergency_fund_target = total_expense_amount * 6 / 12
-            emergency_savings = min(monthly_savings, emergency_fund_target)
+            emergency_savings = max(0, min(monthly_savings, emergency_fund_target))
             monthly_savings -= emergency_savings
             
-            retirement_savings = min(monthly_savings, 7500 / 12)
+            retirement_savings = max(0, min(monthly_savings, 7500 / 12))
             monthly_savings -= retirement_savings
             
-            stock_investment = min(monthly_savings, monthly_savings * 0.10)
+            stock_investment = max(0, min(monthly_savings, monthly_savings * 0.10))
             monthly_savings -= stock_investment
             
             # Ensure no negative values
@@ -132,11 +132,12 @@ def calculate_savings(selected_month, selected_year, view_type):
             retirement_savings = max(retirement_savings, 0)
             stock_investment = max(stock_investment, 0)
             
-            # Warn if close to going over budget
-            if total_expense_amount >= after_tax_income - 1000 and monthly_savings > 0:
+            # Warn if expenses approach $1000 and savings drop below zero
+            if total_expense_amount >= after_tax_income - 1000:
                 messagebox.showwarning("Budget Warning", "You are $1000 away from going over your budget for the month.")
             
-    
+            if monthly_savings <= 0:
+                messagebox.showwarning("Savings Warning", "Your savings have hit 0 or below. Consider saving instead of spending if necessary.")
             
             return income, monthly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income, None
         
@@ -147,18 +148,18 @@ def calculate_savings(selected_month, selected_year, view_type):
             after_tax_income = yearly_income - calculate_taxes(yearly_income)
             yearly_savings = after_tax_income - total_expense_amount
             
-            # Prioritize savings for the year
-            living_expenses = min(yearly_savings, total_expense_amount)
+            # Prioritize expenses over savings for the year
+            living_expenses = total_expense_amount
             yearly_savings -= living_expenses
             
             emergency_fund_target = total_expense_amount * 6 / 12
-            emergency_savings = min(yearly_savings, emergency_fund_target)
+            emergency_savings = max(0, min(yearly_savings, emergency_fund_target))
             yearly_savings -= emergency_savings
             
-            retirement_savings = min(yearly_savings, 7500)
+            retirement_savings = max(0, min(yearly_savings, 7500))
             yearly_savings -= retirement_savings
             
-            stock_investment = min(yearly_savings, yearly_savings * 0.10)
+            stock_investment = max(0, min(yearly_savings, yearly_savings * 0.10))
             yearly_savings -= stock_investment
             
             # Ensure no negative values
@@ -403,7 +404,6 @@ def open_edit_window():
     ttk.Label(edit_window, text="New Amount:").grid(row=5, column=0)
     new_amount_entry = ttk.Entry(edit_window)
     new_amount_entry.grid(row=5, column=1)
-    
     ttk.Button(edit_window, text="Edit Expense", command=edit_expense).grid(row=6, column=0)
     ttk.Button(edit_window, text="Delete Expense", command=delete_expense).grid(row=6, column=1)
     
@@ -433,7 +433,7 @@ def set_income_placeholder():
     income = get_income()
     if income is not None:
         if frequency_var.get() == 'yearly':
-            income *= 12  # Convert monthly income to yearly
+            income *= 12 # Convert monthly income to yearly
         income_entry.insert(0, f"${income:.2f}")
         income_entry.config(foreground='grey', state='readonly')
 
@@ -452,7 +452,6 @@ def update_income_placeholder(*args):
 ttk.Label(income_frame, text="Income Amount:").grid(row=0, column=0, padx=10, pady=5)
 income_entry = ttk.Entry(income_frame)
 income_entry.grid(row=0, column=1, padx=10, pady=5)
-
 frequency_var = tk.StringVar(value='monthly')
 ttk.Radiobutton(income_frame, text="Monthly", variable=frequency_var, value='monthly').grid(row=1, column=0, padx=10, pady=5)
 ttk.Radiobutton(income_frame, text="Yearly", variable=frequency_var, value='yearly').grid(row=1, column=1, padx=10, pady=5)
@@ -460,7 +459,7 @@ ttk.Radiobutton(income_frame, text="Yearly", variable=frequency_var, value='year
 # Add trace to update the income placeholder when the frequency changes
 frequency_var.trace('w', update_income_placeholder)
 
-#Sets the number as greyed-out text.
+# Sets the number as greyed-out text.
 set_income_placeholder()
 
 # Button to set the income amount
@@ -472,29 +471,28 @@ edit_income_button = ttk.Button(income_frame, text="Edit", command=enable_income
 edit_income_button.grid(row=0, column=3, padx=5)
 
 # Expense section
-ttk.Label(expense_frame, text="Expense Amount:").grid(row=0, column=0, padx=10, pady=5)
-amount_entry = ttk.Entry(expense_frame)
-amount_entry.grid(row=0, column=1, padx=10, pady=5)
-ttk.Label(expense_frame, text="Expense Category:").grid(row=1, column=0, padx=10, pady=5)
+ttk.Label(expense_frame, text="Expense Category:").grid(row=0, column=0, padx=10, pady=5)
 category_var = tk.StringVar(value='Rent')
 common_expenses = ["Rent", "Utilities", "Groceries", "Transportation", "Insurance", "Healthcare", "Entertainment", "Dining Out", "Education", "Other"]
-# Ensure "Rent" is always included in the dropdown options
-if "Rent" not in common_expenses:
-    common_expenses.insert(0, "Rent")
-category_dropdown = ttk.OptionMenu(expense_frame, category_var, *common_expenses)
-category_dropdown.grid(row=1, column=1, padx=10, pady=5)
-other_entry = ttk.Entry(expense_frame)
-other_entry.grid(row=1, column=2, padx=10, pady=5)
 
-# Function to update the dropdown menu
 def update_category_dropdown():
+    # Ensure "Rent" is always included in the dropdown options
+    if "Rent" not in common_expenses:
+        common_expenses.insert(0, "Rent")
     menu = category_dropdown["menu"]
     menu.delete(0, "end")
-    for category in common_expenses:
-        menu.add_command(label=category, command=tk._setit(category_var, category))
+    for expense in common_expenses:
+        menu.add_command(label=expense, command=tk._setit(category_var, expense))
 
-# Call the function to ensure the dropdown is updated
+category_dropdown = ttk.OptionMenu(expense_frame, category_var, *common_expenses)
+category_dropdown.grid(row=0, column=1, padx=10, pady=5)
 update_category_dropdown()
+
+other_entry = ttk.Entry(expense_frame)
+other_entry.grid(row=0, column=2, padx=10, pady=5)
+ttk.Label(expense_frame, text="Expense Amount:").grid(row=1, column=0, padx=10, pady=5)
+amount_entry = ttk.Entry(expense_frame)
+amount_entry.grid(row=1, column=1, padx=10, pady=5)
 
 # Date section
 ttk.Label(date_frame, text="Month:").grid(row=0, column=0, padx=10, pady=5)
@@ -508,10 +506,16 @@ years = [str(year) for year in range(datetime.now().year - 20, datetime.now().ye
 year_dropdown = ttk.OptionMenu(date_frame, year_var, *years)
 year_dropdown.grid(row=1, column=1, padx=10, pady=5)
 year_var.trace('w', update_month_dropdown)
-ttk.Label(date_frame, text="View Type:").grid(row=2, column=0, padx=10, pady=5)
+
+# Buttons between Year and View Type
+ttk.Button(date_frame, text="Add Expense", command=add_expense).grid(row=2, column=0, padx=42, pady=5)
+ttk.Button(date_frame, text="Edit Expenses", command=open_edit_window).grid(row=2, column=1, padx=10, pady=5)
+
+# View Type section
+ttk.Label(date_frame, text="View Type:").grid(row=4, column=0, padx=10, pady=5)
 view_type_var = tk.StringVar(value='monthly')
-ttk.Radiobutton(date_frame, text="Monthly", variable=view_type_var, value='monthly').grid(row=2, column=1, padx=10, pady=5)
-ttk.Radiobutton(date_frame, text="Yearly", variable=view_type_var, value='yearly').grid(row=2, column=2, padx=10, pady=5)
+ttk.Radiobutton(date_frame, text="Monthly", variable=view_type_var, value='monthly').grid(row=4, column=1, padx=10, pady=5)
+ttk.Radiobutton(date_frame, text="Yearly", variable=view_type_var, value='yearly').grid(row=4, column=2, padx=10, pady=5)
 
 # Placeholder text for other_entry
 def set_placeholder(event):
@@ -529,10 +533,8 @@ other_entry.config(foreground='grey')
 other_entry.bind('<FocusIn>', clear_placeholder)
 other_entry.bind('<FocusOut>', set_placeholder)
 
-#Bottom Buttons
-ttk.Button(button_frame, text="Add Expense", command=add_expense).grid(row=0, column=1, padx=25, sticky="ew")
-ttk.Button(button_frame, text="Calculate Savings", command=calculate_and_display).grid(row=0, column=2, padx=25, sticky="ew")
-ttk.Button(button_frame, text="Edit Expenses", command=open_edit_window).grid(row=0, column=3, padx=25, sticky="ew")
+# Bottom Button
+ttk.Button(button_frame, text="Calculate Savings", command=calculate_and_display).grid(row=0, column=0, padx=150, pady=10, sticky="ew")
 
 # Configure the row and column weights to allow expansion
 button_frame.columnconfigure(0, weight=1)

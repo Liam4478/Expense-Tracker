@@ -63,3 +63,7 @@ depending on which button you pick.
 
 - There is still more I want to do but I may have to end it here. Unless I have to update anything from feedback.
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Monday 2pm - 5pm (3hrs)
+
+Adjusted the buttons and layout of the form. I also fixed issues with the form that I ran into. I will attempt to get more feedback soon.
