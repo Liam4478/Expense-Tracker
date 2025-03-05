@@ -29,11 +29,13 @@ if __name__ == "__main__":
             amount = Column(Float)
             category = Column(String(50))
             date = Column(Date)
+
         class Income(Base):
             __tablename__ = 'income'
             id = Column(Integer, Sequence('income_id_seq'), primary_key=True)
             amount = Column(Float)
             frequency = Column(String(10)) # 'monthly' or 'yearly'
+
         engine = create_engine('sqlite:///finances.db')
         Base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
@@ -97,11 +99,12 @@ def calculate_taxes(income):
         else:
             federal_tax += remaining_income * bracket[1]
             break
+
     state_tax = income * 0.0307 # Pennsylvania state tax rate
     local_tax = income * 0.011 # Lancaster local tax rate
     total_tax = federal_tax + state_tax + local_tax
     return total_tax
-
+    
 def calculate_savings(selected_month, selected_year, view_type):
     try:
         income = get_income()
@@ -110,72 +113,83 @@ def calculate_savings(selected_month, selected_year, view_type):
             total_expenses = session.query(Expense).filter(extract('month', Expense.date) == selected_month, extract('year', Expense.date) == selected_year).all()
             total_expense_amount = sum(expense.amount for expense in total_expenses)
             after_tax_income = income - calculate_taxes(income)
-            monthly_savings = after_tax_income - total_expense_amount
             
-            # Prioritize expenses over savings
-            living_expenses = total_expense_amount
-            monthly_savings -= living_expenses
+            remaining_income = after_tax_income - total_expense_amount
+
             
-            emergency_fund_target = total_expense_amount * 6 / 12
-            emergency_savings = max(0, min(monthly_savings, emergency_fund_target))
-            monthly_savings -= emergency_savings
+            if remaining_income > 0:
+                # Allocate to emergency savings
+                emergency_fund_target = total_expense_amount * 6 / 12
+                emergency_savings = max(0, min(remaining_income, emergency_fund_target))
+                remaining_income -= emergency_savings
+
+                
+                # Allocate to retirement savings
+                retirement_savings = max(0, min(remaining_income, 7500 / 12))
+                remaining_income -= retirement_savings
+
+                
+                # Allocate to stock investment
+                stock_investment = max(0, min(remaining_income, remaining_income * 0.10))
+                remaining_income -= stock_investment
+
+                
+                # Allocate remaining savings to a general savings category
+                general_savings = max(0, remaining_income)
+
+            else:
+                emergency_savings = 0
+                retirement_savings = 0
+                stock_investment = 0
+                general_savings = 0
             
-            retirement_savings = max(0, min(monthly_savings, 7500 / 12))
-            monthly_savings -= retirement_savings
+            if 0 < after_tax_income - total_expense_amount <= 500:
+                messagebox.showwarning("Budget Warning", "You are $500 away from going over your budget for the month.")
             
-            stock_investment = max(0, min(monthly_savings, monthly_savings * 0.10))
-            monthly_savings -= stock_investment
-            
-            # Ensure no negative values
-            living_expenses = max(living_expenses, 0)
-            emergency_savings = max(emergency_savings, 0)
-            retirement_savings = max(retirement_savings, 0)
-            stock_investment = max(stock_investment, 0)
-            
-            # Warn if expenses approach $1000 and savings drop below zero
-            if total_expense_amount >= after_tax_income - 1000:
-                messagebox.showwarning("Budget Warning", "You are $1000 away from going over your budget for the month.")
-            
-            if monthly_savings <= 0:
-                messagebox.showwarning("Savings Warning", "Your savings have hit 0 or below. Consider saving instead of spending if necessary.")
-            
-            return income, monthly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income, None
+            return income, general_savings, emergency_savings, retirement_savings, stock_investment, total_expenses, total_expense_amount, after_tax_income, None
         
-        else:
+        else:  # Yearly view type
             total_expenses = session.query(Expense).filter(extract('year', Expense.date) == selected_year).all()
             total_expense_amount = sum(expense.amount for expense in total_expenses)
             yearly_income = income * 12
             after_tax_income = yearly_income - calculate_taxes(yearly_income)
-            yearly_savings = after_tax_income - total_expense_amount
             
-            # Prioritize expenses over savings for the year
-            living_expenses = total_expense_amount
-            yearly_savings -= living_expenses
+            remaining_income = after_tax_income - total_expense_amount
+
             
-            emergency_fund_target = total_expense_amount * 6 / 12
-            emergency_savings = max(0, min(yearly_savings, emergency_fund_target))
-            yearly_savings -= emergency_savings
+            if remaining_income > 0:
+                # Allocate to emergency savings
+                emergency_fund_target = total_expense_amount * 6 / 12
+                emergency_savings = max(0, min(remaining_income, emergency_fund_target))
+                remaining_income -= emergency_savings
+
+                
+                # Allocate to retirement savings
+                retirement_savings = max(0, min(remaining_income, 7500))
+                remaining_income -= retirement_savings
+
+                
+                # Allocate to stock investment
+                stock_investment = max(0, min(remaining_income, remaining_income * 0.10))
+                remaining_income -= stock_investment
+
+                
+                # Allocate remaining savings to a general savings category
+                general_savings = max(0, remaining_income)
+
+            else:
+                emergency_savings = 0
+                retirement_savings = 0
+                stock_investment = 0
+                general_savings = 0
             
-            retirement_savings = max(0, min(yearly_savings, 7500))
-            yearly_savings -= retirement_savings
+            performance_line = "You did well for the year!" if general_savings > 0 else "You should try better next year."
             
-            stock_investment = max(0, min(yearly_savings, yearly_savings * 0.10))
-            yearly_savings -= stock_investment
-            
-            # Ensure no negative values
-            living_expenses = max(living_expenses, 0)
-            emergency_savings = max(emergency_savings, 0)
-            retirement_savings = max(retirement_savings, 0)
-            stock_investment = max(stock_investment, 0)
-            
-            # Performance line
-            performance_line = "You did well for the year!" if yearly_savings > 0 else "You should try better next year."
-            
-            return income, yearly_savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income, performance_line
+            return income, general_savings, emergency_savings, retirement_savings, stock_investment, total_expenses, total_expense_amount, after_tax_income, performance_line
     except SQLAlchemyError as e:
         messagebox.showerror("Database Error", str(e))
-        return None, None, None, None, None, None, [], None, None, None
-
+        return None, None, None, None, None, [], None, None, None
+    
 def plot_expenses(expenses, view_type):
     categories = {}
     for expense in expenses:
@@ -246,34 +260,28 @@ def calculate_and_display():
         selected_month = months.index(month_var.get()) + 1
         selected_year = int(year_var.get())
         view_type = view_type_var.get()
-        income, savings, emergency_savings, retirement_savings, stock_investment, living_expenses, total_expenses, total_expense_amount, after_tax_income, performance_line = calculate_savings(selected_month, selected_year, view_type)
+        after_tax_income, general_savings, emergency_savings, retirement_savings, stock_investment, total_expenses, total_expense_amount, after_tax_income, performance_line = calculate_savings(selected_month, selected_year, view_type)
         
-        if savings is not None:
+        if general_savings is not None:
             if view_type == 'monthly':
-                if savings <= 0:
-                    amount_under = total_expense_amount - after_tax_income
-                    messagebox.showwarning("Savings Warning", f"Your savings have hit 0 or below. You lost ${abs(amount_under):.2f}. Consider saving instead of spending if necessary.")
-                else:
-                    messagebox.showinfo("Savings", f"Monthly Income: ${income:.2f}\n"
-                                                  f"Monthly Savings: ${savings:.2f}\n"
-                                                  f"Emergency Savings: ${emergency_savings:.2f}\n"
-                                                  f"Retirement Savings: ${retirement_savings:.2f}\n"
-                                                  f"Stock Investment: ${stock_investment:.2f}\n"
-                                                  f"Living Expenses: ${living_expenses:.2f}\n"
-                                                  f"Total Expenses for {month_var.get()} {selected_year}: ${total_expense_amount:.2f}")
+                if general_savings == 0 and emergency_savings == 0 and retirement_savings == 0 and stock_investment == 0:
+                    messagebox.showwarning("Savings Warning", "Your savings will not be able to be calculated due to poor cost management. Consider saving instead of spending if necessary.")
+                messagebox.showinfo("Savings", f"Monthly Income(After Tax): ${after_tax_income:.2f}\n"
+                                              f"General Savings: ${general_savings:.2f}\n"
+                                              f"Emergency Savings: ${emergency_savings:.2f}\n"
+                                              f"Retirement Savings: ${retirement_savings:.2f}\n"
+                                              f"Stock Investment: ${stock_investment:.2f}\n"
+                                              f"Total Expenses for {month_var.get()} {selected_year}: ${total_expense_amount:.2f}")
             else:
-                if savings <= 0:
-                    amount_under = total_expense_amount - after_tax_income
-                    messagebox.showwarning("Savings Warning", f"Your savings have hit 0 or below. You lost ${abs(amount_under):.2f}. Consider saving instead of spending if necessary.")
-                else:
-                    messagebox.showinfo("Yearly Summary", f"Yearly Income: ${after_tax_income:.2f}\n"
-                                                          f"Yearly Savings: ${savings:.2f}\n"
-                                                          f"Emergency Savings: ${emergency_savings:.2f}\n"
-                                                          f"Retirement Savings: ${retirement_savings:.2f}\n"
-                                                          f"Stock Investment: ${stock_investment:.2f}\n"
-                                                          f"Living Expenses: ${living_expenses:.2f}\n"
-                                                          f"Total Expenses for the Year: ${total_expense_amount:.2f}\n"
-                                                          f"{performance_line}")
+                if general_savings == 0 and emergency_savings == 0 and retirement_savings == 0 and stock_investment == 0:
+                    messagebox.showwarning("Savings Warning", "Your savings will not be able to be calculated due to poor cost management. Consider saving instead of spending if necessary.")
+                messagebox.showinfo("Yearly Summary", f"Yearly Income(After Tax): ${after_tax_income:.2f}\n"
+                                                     f"General Savings: ${general_savings:.2f}\n"
+                                                     f"Emergency Savings: ${emergency_savings:.2f}\n"
+                                                     f"Retirement Savings: ${retirement_savings:.2f}\n"
+                                                     f"Stock Investment: ${stock_investment:.2f}\n"
+                                                     f"Total Expenses for the Year: ${total_expense_amount:.2f}\n"
+                                                     f"{performance_line}")
             plot_expenses(total_expenses, view_type)
     except TypeError:
         messagebox.showerror("Income Error", "Please set your monthly or yearly income first.")
@@ -449,7 +457,7 @@ def update_income_placeholder(*args):
     set_income_placeholder()
 
 # Income section
-ttk.Label(income_frame, text="Income Amount:").grid(row=0, column=0, padx=10, pady=5)
+ttk.Label(income_frame, text="Income Amount(Before Tax):").grid(row=0, column=0, padx=10, pady=5)
 income_entry = ttk.Entry(income_frame)
 income_entry.grid(row=0, column=1, padx=10, pady=5)
 frequency_var = tk.StringVar(value='monthly')
@@ -487,7 +495,6 @@ def update_category_dropdown():
 category_dropdown = ttk.OptionMenu(expense_frame, category_var, *common_expenses)
 category_dropdown.grid(row=0, column=1, padx=10, pady=5)
 update_category_dropdown()
-
 other_entry = ttk.Entry(expense_frame)
 other_entry.grid(row=0, column=2, padx=10, pady=5)
 ttk.Label(expense_frame, text="Expense Amount:").grid(row=1, column=0, padx=10, pady=5)
