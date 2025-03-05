@@ -79,14 +79,14 @@ def get_income():
         return None
 
 def calculate_taxes(income):
-    # Federal tax brackets for 2023 (example)
+    # Federal tax brackets for 2025
     federal_tax_brackets = [
-        (10275, 0.10),
-        (41775, 0.12),
-        (89075, 0.22),
-        (170050, 0.24),
-        (215950, 0.32),
-        (539900, 0.35),
+        (11925, 0.10),
+        (48475, 0.12),
+        (103350, 0.22),
+        (197300, 0.24),
+        (250525, 0.32),
+        (609350, 0.35),
         (float('inf'), 0.37)
     ]
     
