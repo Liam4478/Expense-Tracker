@@ -30,7 +30,7 @@ Working on the graphs that will plot the expenses and add new expenses to that p
 Friday 2pm - 4pm + 6pm - 7pm (3hrs)
 
 Worked on the implementation of the forms with calculating and displaying savings in it's own form. 
-The indentation was difficult but I managed to figure out the right amount of indentation after I had m,essed up the first time. 
+The indentation was difficult but I managed to figure out the right amount of indentation after I had messed up the first time. 
 (Working towards the end goal for this weekend.)
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -39,7 +39,7 @@ Saturday 1pm - 4pm (3hrs)
 
 Worked on a windows that allows the user to edit the money given in case you acidentally put in the wrong number. 
 I also added windows that will load the information given, and also an option to delete expenses.
-There was a little trouble with the indentation of somecode but fixed it.
+There was a little trouble with the indentation of some parts of the code but fixed it.
 (I plan to finish this tomorrow.)
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -72,7 +72,10 @@ Adjusted the buttons and layout of the form. I also fixed issues with the form t
 Tuesday  2pm - 7pm
 Wednesday 9am - 10:30am
 
-Fixed up the income calculatyion display. Showed the before income amount rather than the after income amount. Fixed the error messages to show up at the apprpriate time.
+Fixed up the income calculation display. Showed the before income amount rather than the after income amount. Fixed the error messages to show up at the apprpriate time.
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+Wednesday 
+
+Wrote the paper!
