@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 from sqlalchemy import create_engine, Column, Integer, Float, String, Sequence, Date, extract
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -10,17 +11,36 @@ from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 import json
 
-def install_requirements():
+def create_virtualenv(env_name):
+    # Create virtual environment
+    subprocess.check_call([sys.executable, '-m', 'venv', env_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print(f"Virtual environment '{env_name}' created.")
+
+def install_requirements(env_name, requirements_file):
+    # Determine the activation script based on the operating system
+    if os.name == 'nt':  # Windows
+        activate_script = f"{env_name}\\Scripts\\activate"
+        command = f"{activate_script} && pip install -r {requirements_file}"
+    else:  # Unix-based systems
+        activate_script = f"./{env_name}/bin/activate"
+        command = f"source {activate_script} && pip install -r {requirements_file}"
+    
+    # Install dependencies
     try:
-        print("Loading...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.check_call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         print(f"Error installing requirements: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
-    install_requirements()
+    env_name = "LHFinalProject"
+    requirements_file = "requirements.txt"
+    
+    print("Loading...")
+    create_virtualenv(env_name)
+    install_requirements(env_name, requirements_file)
+    print("Completed")
+
     try:
         Base = declarative_base()
         class Expense(Base):
@@ -29,13 +49,13 @@ if __name__ == "__main__":
             amount = Column(Float)
             category = Column(String(50))
             date = Column(Date)
-
+        
         class Income(Base):
             __tablename__ = 'income'
             id = Column(Integer, Sequence('income_id_seq'), primary_key=True)
             amount = Column(Float)
             frequency = Column(String(10)) # 'monthly' or 'yearly'
-
+        
         engine = create_engine('sqlite:///finances.db')
         Base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
@@ -572,5 +592,4 @@ def save_settings():
         json.dump(settings, settings_file)
 
 root.protocol("WM_DELETE_WINDOW", lambda: [save_settings(), root.destroy()])
-print("Completed")
 root.mainloop()
