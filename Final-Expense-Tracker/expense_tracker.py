@@ -12,12 +12,11 @@ from sqlalchemy.exc import SQLAlchemyError
 import json
 
 def create_virtualenv(env_name):
-    # Create virtual environment
+    # Creates the virtual environment
     subprocess.check_call([sys.executable, '-m', 'venv', env_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print(f"Virtual environment '{env_name}' created.")
 
 def install_requirements(env_name, requirements_file):
-    # Determine the activation script based on the operating system
+    # Determines the activation script based on the operating system
     if os.name == 'nt':  # Windows
         activate_script = f"{env_name}\\Scripts\\activate"
         command = f"{activate_script} && pip install -r {requirements_file}"
@@ -25,7 +24,7 @@ def install_requirements(env_name, requirements_file):
         activate_script = f"./{env_name}/bin/activate"
         command = f"source {activate_script} && pip install -r {requirements_file}"
     
-    # Install dependencies
+    # Installs dependencies
     try:
         subprocess.check_call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
