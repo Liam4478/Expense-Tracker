@@ -12,19 +12,19 @@ from sqlalchemy.exc import SQLAlchemyError
 import json
 
 def create_virtualenv(env_name):
-    # Creates the virtual environment
+    
     subprocess.check_call([sys.executable, '-m', 'venv', env_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def install_requirements(env_name, requirements_file):
-    # Determines the activation script based on the operating system
-    if os.name == 'nt':  # Windows
+    
+    if os.name == 'nt':  
         activate_script = f"{env_name}\\Scripts\\activate"
         command = f"{activate_script} && pip install -r {requirements_file}"
-    else:  # Unix-based systems
+    else:  
         activate_script = f"./{env_name}/bin/activate"
         command = f"source {activate_script} && pip install -r {requirements_file}"
     
-    # Installs dependencies
+    
     try:
         subprocess.check_call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
@@ -32,7 +32,7 @@ def install_requirements(env_name, requirements_file):
         sys.exit(1)
 
 if __name__ == "__main__":
-    env_name = "LHFinalProject"
+    env_name = "Expense-Tracker-env"
     requirements_file = "requirements.txt"
     
     print("Loading...")
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             __tablename__ = 'income'
             id = Column(Integer, Sequence('income_id_seq'), primary_key=True)
             amount = Column(Float)
-            frequency = Column(String(10)) # 'monthly' or 'yearly'
+            frequency = Column(String(10)) 
         
         engine = create_engine('sqlite:///finances.db')
         Base.metadata.create_all(engine)
@@ -90,7 +90,7 @@ def get_income():
         income = session.query(Income).first()
         if income:
             if income.frequency == 'yearly':
-                return income.amount / 12 # Convert yearly income to monthly
+                return income.amount / 12 
             return income.amount
         return None
     except SQLAlchemyError as e:
@@ -98,7 +98,7 @@ def get_income():
         return None
 
 def calculate_taxes(income):
-    # Federal tax brackets for 2025
+    
     federal_tax_brackets = [
         (11925, 0.10),
         (48475, 0.12),
@@ -119,8 +119,8 @@ def calculate_taxes(income):
             federal_tax += remaining_income * bracket[1]
             break
 
-    state_tax = income * 0.0307 # Pennsylvania state tax rate
-    local_tax = income * 0.011 # Lancaster local tax rate
+    state_tax = income * 0.0307 
+    local_tax = income * 0.011 
     total_tax = federal_tax + state_tax + local_tax
     return total_tax
     
@@ -137,23 +137,23 @@ def calculate_savings(selected_month, selected_year, view_type):
 
             
             if remaining_income > 0:
-                # Allocate to emergency savings
+               
                 emergency_fund_target = total_expense_amount * 6 / 12
                 emergency_savings = max(0, min(remaining_income, emergency_fund_target))
                 remaining_income -= emergency_savings
 
                 
-                # Allocate to retirement savings
+                
                 retirement_savings = max(0, min(remaining_income, 7500 / 12))
                 remaining_income -= retirement_savings
 
                 
-                # Allocate to stock investment
+                
                 stock_investment = max(0, min(remaining_income, remaining_income * 0.10))
                 remaining_income -= stock_investment
 
                 
-                # Allocate remaining savings to a general savings category
+                
                 general_savings = max(0, remaining_income)
 
             else:
@@ -167,7 +167,7 @@ def calculate_savings(selected_month, selected_year, view_type):
             
             return income, general_savings, emergency_savings, retirement_savings, stock_investment, total_expenses, total_expense_amount, after_tax_income, None
         
-        else:  # Yearly view type
+        else: 
             total_expenses = session.query(Expense).filter(extract('year', Expense.date) == selected_year).all()
             total_expense_amount = sum(expense.amount for expense in total_expenses)
             yearly_income = income * 12
@@ -177,23 +177,23 @@ def calculate_savings(selected_month, selected_year, view_type):
 
             
             if remaining_income > 0:
-                # Allocate to emergency savings
+               
                 emergency_fund_target = total_expense_amount * 6 / 12
                 emergency_savings = max(0, min(remaining_income, emergency_fund_target))
                 remaining_income -= emergency_savings
 
                 
-                # Allocate to retirement savings
+               
                 retirement_savings = max(0, min(remaining_income, 7500))
                 remaining_income -= retirement_savings
 
                 
-                # Allocate to stock investment
+               
                 stock_investment = max(0, min(remaining_income, remaining_income * 0.10))
                 remaining_income -= stock_investment
 
                 
-                # Allocate remaining savings to a general savings category
+               
                 general_savings = max(0, remaining_income)
 
             else:
@@ -226,7 +226,7 @@ def plot_expenses(expenses, view_type):
         plt.title('Yearly Expenses by Category')
     plt.xlabel('Category')
     plt.ylabel('Amount')
-    # Add annotations to the bars
+    
     for bar in bars:
         yval = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2, yval, f'${yval:.2f}', ha='center', va='bottom')
@@ -240,7 +240,7 @@ def add_expense():
             category = other_entry.get()
         month = months.index(month_var.get()) + 1
         year = int(year_var.get())
-        day = datetime.now().day # Get the current day
+        day = datetime.now().day 
         save_expense(amount, category, month, year, day)
         messagebox.showinfo("Expense Added", f"Added expense of ${amount:.2f} to category '{category}' for {month_var.get()} {year}.")
         amount_entry.delete(0, tk.END)
@@ -311,7 +311,7 @@ def update_edit_month_dropdown(*args):
     current_month = datetime.now().month
     previous_month = month_var.get()
     
-    # Ensure January is always included
+    
     if selected_year == current_year:
         valid_months = months[:current_month]
     else:
@@ -389,7 +389,7 @@ def open_edit_window():
         current_month = datetime.now().month
         previous_month = edit_month_var.get()
         
-        # Ensure January is always included
+        
         if selected_year == current_year:
             valid_months = months[:current_month]
         else:
@@ -407,8 +407,8 @@ def open_edit_window():
     
     edit_window = tk.Toplevel(root)
     edit_window.title("Edit Expenses")
-    edit_window.transient(root) # Make the edit window a child of the main window
-    edit_window.grab_set() # Make the edit window modal
+    edit_window.transient(root)
+    edit_window.grab_set() 
     
     ttk.Label(edit_window, text="Select Month:").grid(row=0, column=0, padx=10, pady=5)
     edit_month_var = tk.StringVar(value=datetime.now().strftime('%B'))
@@ -420,7 +420,7 @@ def open_edit_window():
     edit_year_dropdown = ttk.OptionMenu(edit_window, edit_year_var, *years)
     edit_year_dropdown.grid(row=1, column=1, padx=10, pady=5)
     
-    # Add trace to update month dropdown dynamically
+    
     edit_year_var.trace('w', update_edit_month_dropdown)
     
     ttk.Button(edit_window, text="Load Expenses", command=load_expenses).grid(row=2, column=0, columnspan=2, pady=10)
@@ -445,7 +445,7 @@ style.configure("TLabel", padding=6, relief="flat", background="#f0f0f0")
 style.configure("TButton", padding=6, relief="flat", background="#d9d9d9")
 style.configure("TEntry", padding=6, relief="flat", background="#ffffff")
 
-# Create frames for different sections
+
 income_frame = ttk.Frame(root, padding="10 10 10 10")
 income_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E))
 expense_frame = ttk.Frame(root, padding="10 10 10 10")
@@ -455,27 +455,27 @@ date_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E))
 button_frame = ttk.Frame(root, padding="10 10 10 10")
 button_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
-# Function to set the initial income amount as greyed-out text
+
 def set_income_placeholder():
     income = get_income()
     if income is not None:
         if frequency_var.get() == 'yearly':
-            income *= 12 # Convert monthly income to yearly
+            income *= 12 
         income_entry.insert(0, f"${income:.2f}")
         income_entry.config(foreground='grey', state='readonly')
 
-# Function to enable editing the income amount
+
 def enable_income_edit():
     income_entry.config(state='normal', foreground='black')
     income_entry.delete(0, tk.END)
 
-# Function to update the income placeholder based on the selected frequency
+
 def update_income_placeholder(*args):
     income_entry.config(state='normal')
     income_entry.delete(0, tk.END)
     set_income_placeholder()
 
-# Income section
+
 ttk.Label(income_frame, text="Income Amount(Before Tax):").grid(row=0, column=0, padx=10, pady=5)
 income_entry = ttk.Entry(income_frame)
 income_entry.grid(row=0, column=1, padx=10, pady=5)
@@ -483,27 +483,27 @@ frequency_var = tk.StringVar(value='monthly')
 ttk.Radiobutton(income_frame, text="Monthly", variable=frequency_var, value='monthly').grid(row=1, column=0, padx=10, pady=5)
 ttk.Radiobutton(income_frame, text="Yearly", variable=frequency_var, value='yearly').grid(row=1, column=1, padx=10, pady=5)
 
-# Add trace to update the income placeholder when the frequency changes
+
 frequency_var.trace('w', update_income_placeholder)
 
-# Sets the number as greyed-out text.
+
 set_income_placeholder()
 
-# Button to set the income amount
+
 set_income_button = ttk.Button(income_frame, text="Set Income", command=set_income)
 set_income_button.grid(row=0, column=2, padx=5)
 
-# Button to enable editing the income amount
+
 edit_income_button = ttk.Button(income_frame, text="Edit", command=enable_income_edit)
 edit_income_button.grid(row=0, column=3, padx=5)
 
-# Expense section
+
 ttk.Label(expense_frame, text="Expense Category:").grid(row=0, column=0, padx=10, pady=5)
 category_var = tk.StringVar(value='Rent')
 common_expenses = ["Rent", "Utilities", "Groceries", "Transportation", "Insurance", "Healthcare", "Entertainment", "Dining Out", "Education", "Other"]
 
 def update_category_dropdown():
-    # Ensure "Rent" is always included in the dropdown options
+    
     if "Rent" not in common_expenses:
         common_expenses.insert(0, "Rent")
     menu = category_dropdown["menu"]
@@ -520,7 +520,7 @@ ttk.Label(expense_frame, text="Expense Amount:").grid(row=1, column=0, padx=10, 
 amount_entry = ttk.Entry(expense_frame)
 amount_entry.grid(row=1, column=1, padx=10, pady=5)
 
-# Date section
+
 ttk.Label(date_frame, text="Month:").grid(row=0, column=0, padx=10, pady=5)
 month_var = tk.StringVar(value=datetime.now().strftime('%B'))
 months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -528,22 +528,22 @@ month_dropdown = ttk.OptionMenu(date_frame, month_var, *months)
 month_dropdown.grid(row=0, column=1, padx=10, pady=5)
 ttk.Label(date_frame, text="Year:").grid(row=1, column=0, padx=10, pady=5)
 year_var = tk.StringVar(value=str(datetime.now().year))
-years = [str(year) for year in range(datetime.now().year - 20, datetime.now().year + 1)] # Allowing years further back than 2016
+years = [str(year) for year in range(datetime.now().year - 20, datetime.now().year + 1)] 
 year_dropdown = ttk.OptionMenu(date_frame, year_var, *years)
 year_dropdown.grid(row=1, column=1, padx=10, pady=5)
 year_var.trace('w', update_month_dropdown)
 
-# Buttons between Year and View Type
+
 ttk.Button(date_frame, text="Add Expense", command=add_expense).grid(row=2, column=0, padx=42, pady=5)
 ttk.Button(date_frame, text="Edit Expenses", command=open_edit_window).grid(row=2, column=1, padx=10, pady=5)
 
-# View Type section
+
 ttk.Label(date_frame, text="View Type:").grid(row=4, column=0, padx=10, pady=5)
 view_type_var = tk.StringVar(value='monthly')
 ttk.Radiobutton(date_frame, text="Monthly", variable=view_type_var, value='monthly').grid(row=4, column=1, padx=10, pady=5)
 ttk.Radiobutton(date_frame, text="Yearly", variable=view_type_var, value='yearly').grid(row=4, column=2, padx=10, pady=5)
 
-# Placeholder text for other_entry
+
 def set_placeholder(event):
     if other_entry.get() == '':
         other_entry.insert(0, 'Specify if "Other"')
@@ -559,10 +559,10 @@ other_entry.config(foreground='grey')
 other_entry.bind('<FocusIn>', clear_placeholder)
 other_entry.bind('<FocusOut>', set_placeholder)
 
-# Bottom Button
+
 ttk.Button(button_frame, text="Calculate Savings", command=calculate_and_display).grid(row=0, column=0, padx=150, pady=10, sticky="ew")
 
-# Configure the row and column weights to allow expansion
+
 button_frame.columnconfigure(0, weight=1)
 button_frame.columnconfigure(1, weight=1)
 button_frame.columnconfigure(2, weight=1)
